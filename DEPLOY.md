@@ -122,7 +122,7 @@ PORT=8080 python3 app.py
 
 2. **Clone and setup:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/algae514/V2V_TTS.git
    cd V2V_TTS
    ./setup.sh
    ```
