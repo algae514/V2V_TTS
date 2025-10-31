@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Clone repo
-git clone <your-repo-url>
+git clone https://github.com/algae514/V2V_TTS.git
 cd V2V_TTS
 
 # 2. Setup (one-time, installs everything)

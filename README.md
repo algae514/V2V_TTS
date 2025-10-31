@@ -17,7 +17,7 @@ A production-ready Text-to-Speech server using **MeloTTS** and FastAPI, optimize
 
 1. **Clone repository:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/algae514/V2V_TTS.git
    cd V2V_TTS
    ```
 
@@ -56,7 +56,7 @@ A production-ready Text-to-Speech server using **MeloTTS** and FastAPI, optimize
 
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone https://github.com/algae514/V2V_TTS.git
 cd V2V_TTS
 
 # Run setup (installs everything automatically)

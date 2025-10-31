@@ -8,7 +8,7 @@ Deployment guide for the MeloTTS Text-to-Speech server using Git-based deploymen
 
 1. **Clone repository on your server:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/algae514/V2V_TTS.git
    cd V2V_TTS
    ```
 
@@ -72,7 +72,7 @@ sudo apt-get install -y \
 ### 2. Clone Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/algae514/V2V_TTS.git
 cd V2V_TTS
 ```
 
@@ -148,7 +148,7 @@ PORT=8080 python3 app.py
 
 2. **SSH into pod and clone:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/algae514/V2V_TTS.git
    cd V2V_TTS
    ./setup.sh
    ./start.sh
