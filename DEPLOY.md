@@ -278,8 +278,8 @@ TTS_DEVICE=cpu python3 app.py
 
 **Port already in use:**
 ```bash
-# Use different port
-# Default port is 8080. To use a different port if 8080 is occupied:
+# The start script automatically kills any process using port 8080
+# If you prefer to use a different port:
 PORT=9090 ./start.sh
 ```
 

@@ -43,9 +43,19 @@ fi
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
+# Check if port is already in use and kill the process
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    OCCUPYING_PID=$(lsof -Pi :$PORT -sTCP:LISTEN -t)
+    echo -e "${YELLOW}Port $PORT is already in use by PID $OCCUPYING_PID${NC}"
+    echo "Killing process on port $PORT..."
+    kill -9 $OCCUPYING_PID 2>/dev/null || true
+    sleep 1
+    echo -e "${GREEN}Port $PORT is now available${NC}"
+fi
+
 # Start server in background
 echo -e "${GREEN}Starting server on port $PORT...${NC}"
-nohup python3 app.py > "$LOG_FILE" 2>&1 &
+PORT=$PORT nohup python3 app.py > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 
 # Save PID

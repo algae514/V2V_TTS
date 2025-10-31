@@ -137,10 +137,11 @@ V2V_TTS/
 - `TTS_DEVICE`: Device to use - `cuda` or `cpu` (default: auto-detect)
 - `TTS_LANGUAGE`: Language code (default: `EN`)
 
-### Example with Custom Port (if 8080 is occupied)
+### Custom Port (Optional)
 
 ```bash
-# Default port is 8080, but you can override if needed:
+# Default port is 8080 (automatically freed if occupied)
+# To use a different port:
 PORT=9090 ./start.sh
 ```
 
@@ -215,8 +216,10 @@ TTS_DEVICE=cpu ./start.sh
 
 ### Port Already in Use
 
+The start script automatically kills any process using port 8080. If you need to use a different port:
+
 ```bash
-# Default port is 8080. If it's occupied, use a different port:
+# Use a different port
 PORT=9090 ./start.sh
 ```
 
