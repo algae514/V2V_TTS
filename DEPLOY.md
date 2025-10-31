@@ -174,6 +174,7 @@ Set these before running the server:
 
 Example:
 ```bash
+# Default port is 8080. To use a different port:
 PORT=9090 TTS_DEVICE=cuda python3 app.py
 ```
 
@@ -278,6 +279,7 @@ TTS_DEVICE=cpu python3 app.py
 **Port already in use:**
 ```bash
 # Use different port
+# Default port is 8080. To use a different port if 8080 is occupied:
 PORT=9090 ./start.sh
 ```
 

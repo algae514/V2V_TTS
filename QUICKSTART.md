@@ -47,6 +47,7 @@ git pull
 
 **Port already in use?**
 ```bash
+# Default port is 8080. If occupied, use a different port:
 PORT=9090 ./start.sh
 ```
 
