@@ -42,10 +42,22 @@ apt-get install -y \
     mecab \
     libmecab-dev \
     mecab-ipadic-utf8 \
+    pkg-config \
+    libssl-dev \
     || {
     echo -e "${RED}Failed to install system dependencies${NC}"
     exit 1
 }
+
+# Install Rust (needed for tokenizers)
+echo -e "${GREEN}Installing Rust compiler...${NC}"
+if ! command -v rustc &> /dev/null; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env" || true
+    export PATH="$HOME/.cargo/bin:$PATH"
+else
+    echo -e "${YELLOW}Rust already installed${NC}"
+fi
 
 # Create virtual environment
 echo -e "${GREEN}[3/6] Creating Python virtual environment...${NC}"
@@ -59,6 +71,13 @@ fi
 # Activate virtual environment and upgrade pip
 echo -e "${GREEN}[4/6] Installing Python dependencies...${NC}"
 source venv/bin/activate
+
+# Source Rust environment if available
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
 pip install --upgrade pip setuptools wheel
 
 # Install PyTorch (with CUDA support if GPU available)
