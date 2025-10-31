@@ -1,0 +1,12 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+soundfile==0.12.1
+numpy==1.24.3
+requests==2.31.0
+
+# Note: torch and torchaudio installed in Dockerfile for GPU support
+# MeloTTS - install from git
+git+https://github.com/myshell-ai/MeloTTS.git@main
+
