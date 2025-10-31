@@ -123,9 +123,6 @@ V2V_TTS/
 ├── start.sh               # Start server script
 ├── stop.sh                # Stop server script
 ├── test_server.sh         # Test script
-├── Dockerfile            # Docker configuration (optional)
-├── docker-compose.yml    # Docker Compose config (optional)
-├── deploy.sh             # Docker deployment script (optional)
 ├── Makefile              # Build automation
 ├── client_example.py      # Example Python client
 ├── README.md             # This file
@@ -143,12 +140,7 @@ V2V_TTS/
 ### Example with Custom Port
 
 ```bash
-docker run -d \
-  --name tts-server \
-  --gpus all \
-  -p 9090:8080 \
-  -e PORT=8080 \
-  tts-server
+PORT=9090 ./start.sh
 ```
 
 ## 🎮 Server Management
@@ -173,7 +165,6 @@ tail -f logs/tts_server.log
 curl http://localhost:8080/health
 ```
 
-**Note:** Docker deployment is also available but Git-based deployment is recommended for better performance and easier updates.
 
 ## 📝 Usage Examples
 
@@ -214,37 +205,38 @@ async function synthesize(text) {
 ### GPU Not Detected
 
 ```bash
-# Check GPU in container
-docker exec tts-server nvidia-smi
+# Check GPU
+nvidia-smi
 
 # Use CPU mode
-docker run -e TTS_DEVICE=cpu tts-server
+TTS_DEVICE=cpu ./start.sh
 ```
 
 ### Port Already in Use
 
 ```bash
 # Use different port
-docker run -p 9090:8080 tts-server
+PORT=9090 ./start.sh
 ```
 
 ### MeCab/UniDic Issues
 
-The Dockerfile automatically handles MeCab installation. If issues occur:
+The setup script automatically handles MeCab installation. If issues occur:
 
 ```bash
 # Check MeCab
-docker exec tts-server mecab --version
+mecab --version
 
 # Re-download UniDic
-docker exec tts-server python3 -m unidic download
+source venv/bin/activate
+python3 -m unidic download
 ```
 
 ### Model Loading Fails
 
 - Check GPU memory: `nvidia-smi`
-- Try CPU mode: `TTS_DEVICE=cpu`
-- Check logs: `docker logs tts-server`
+- Try CPU mode: `TTS_DEVICE=cpu ./start.sh`
+- Check logs: `tail -f logs/tts_server.log`
 
 ## 🛡️ Production Considerations
 

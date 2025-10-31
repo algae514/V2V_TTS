@@ -317,10 +317,3 @@ pip install -r requirements.txt --upgrade
 5. **Add authentication** if exposing publicly
 6. **Set up log rotation** for log files
 
-## 🐳 Docker Deployment (Optional)
-
-If you prefer Docker, see the Dockerfile. However, direct Git deployment is recommended for:
-- ✅ Faster startup (no container overhead)
-- ✅ Easier updates (just `git pull`)
-- ✅ Better resource utilization
-- ✅ Simpler debugging
