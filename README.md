@@ -4,12 +4,23 @@ A production-ready Text-to-Speech server using **MeloTTS** and FastAPI, optimize
 
 ## ✨ Features
 
-- 🎤 **MeloTTS-English v3** - High-quality neural TTS
+- 🎤 **MeloTTS-English** - High-quality neural TTS (default English model from MeloTTS library)
 - 🚀 **GPU Accelerated** - Automatic CUDA detection with CPU fallback
 - 🔌 **RESTful API** - FastAPI-based, production-ready
 - 📊 **Health Monitoring** - Built-in health checks
 - 🌍 **Cloud Ready** - Works on Vast.ai, RunPod, AWS, GCP, Azure
 - ⚡ **Git-Based Deployment** - Simple, fast, and optimized
+
+## 🎤 Model Information
+
+**Model:** MeloTTS English (default model from MeloTTS library)  
+**Source:** `git+https://github.com/myshell-ai/MeloTTS.git@main`  
+**Language:** English (EN)  
+**Sample Rate:** 44100 Hz  
+**Device:** Auto-detects GPU (CUDA), falls back to CPU  
+**Initialization:** `TTS(language="EN", device=device)`
+
+**Note:** The model version is determined by the MeloTTS repository's main branch at installation time. PyTorch is installed separately in `setup.sh` with GPU-aware detection.
 
 ## 🚀 Quick Start
 
@@ -136,6 +147,14 @@ V2V_TTS/
 - `PORT`: Server port (default: `8080`)
 - `TTS_DEVICE`: Device to use - `cuda` or `cpu` (default: auto-detect)
 - `TTS_LANGUAGE`: Language code (default: `EN`)
+
+### Dependencies
+
+**Core dependencies** are in `requirements.txt`. PyTorch and torchaudio are installed separately in `setup.sh` with automatic GPU/CPU detection:
+- GPU available: Installs PyTorch with CUDA 11.8 support
+- CPU only: Installs standard PyTorch
+
+**MeloTTS** is installed from the main branch: `git+https://github.com/myshell-ai/MeloTTS.git@main`
 
 ### Custom Port (Optional)
 
