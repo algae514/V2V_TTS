@@ -8,7 +8,9 @@ requests==2.31.0
 hf_transfer
 soxr
 
-# Note: torch and torchaudio installed in Dockerfile for GPU support
-# MeloTTS - install from git
+# Note: torch and torchaudio are installed separately in setup.sh
+# This allows GPU detection and proper CUDA/CPU installation
+# MeloTTS - install from git (main branch)
+# Uses default English model from MeloTTS repository
 git+https://github.com/myshell-ai/MeloTTS.git@main
 
