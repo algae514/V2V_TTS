@@ -22,7 +22,10 @@ fi
 # Update system packages
 echo -e "${GREEN}[1/6] Updating system packages...${NC}"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update || true
+apt-get update || {
+    echo -e "${RED}Failed to update package lists${NC}"
+    echo -e "${YELLOW}Continuing anyway, but package installation may fail...${NC}"
+}
 
 # Install system dependencies
 echo -e "${GREEN}[2/6] Installing system dependencies...${NC}"
@@ -51,70 +54,44 @@ apt-get install -y \
     exit 1
 }
 
-# CRITICAL FIX: Refresh library cache for mecab
+# CRITICAL: Configure mecab library cache
 echo -e "${GREEN}Configuring mecab library...${NC}"
-
-# Run ldconfig with proper permissions
-if [ "$EUID" -eq 0 ]; then
-    ldconfig
-else
-    sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
-fi
-
-# Wait a moment for cache to update
-sleep 1
 
 # Find mecab library location
 MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
 
 if [ -z "$MECAB_LIB" ]; then
-    echo -e "${RED}ERROR: libmecab.so.2 not found after installation!${NC}"
-    echo -e "${YELLOW}Attempting to reinstall mecab packages...${NC}"
-    apt-get install --reinstall -y libmecab2 mecab libmecab-dev mecab-ipadic-utf8
-    
-    if [ "$EUID" -eq 0 ]; then
-        ldconfig
-    else
-        sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
-    fi
-    
-    sleep 1
-    MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
-fi
-
-if [ -n "$MECAB_LIB" ]; then
-    MECAB_DIR=$(dirname "$MECAB_LIB")
-    echo -e "${GREEN}Found mecab library at: $MECAB_LIB${NC}"
-    
-    # Ensure the directory is in the library path
-    if [ ! -f /etc/ld.so.conf.d/mecab.conf ]; then
-        echo -e "${YELLOW}Adding mecab library directory to ld.so.conf...${NC}"
-        if [ "$EUID" -eq 0 ]; then
-            echo "$MECAB_DIR" > /etc/ld.so.conf.d/mecab.conf
-            ldconfig
-        else
-            echo "$MECAB_DIR" | sudo tee /etc/ld.so.conf.d/mecab.conf > /dev/null
-            sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
-        fi
-        sleep 1
-    fi
-    
-    # Verify it's in the cache
-    if ldconfig -p 2>/dev/null | grep -q "libmecab.so.2"; then
-        echo -e "${GREEN}✅ libmecab.so.2 is properly configured in library cache${NC}"
-    else
-        echo -e "${YELLOW}WARNING: libmecab.so.2 found but not in cache. Will set LD_LIBRARY_PATH at runtime.${NC}"
-    fi
-    
-    # Export for current session
-    export LD_LIBRARY_PATH="${MECAB_DIR}:${LD_LIBRARY_PATH}"
-else
-    echo -e "${RED}FATAL ERROR: Could not find libmecab.so.2 after multiple attempts${NC}"
-    echo -e "${RED}Please install mecab manually:${NC}"
-    echo -e "${YELLOW}  apt-get install -y libmecab2 mecab libmecab-dev mecab-ipadic-utf8${NC}"
-    echo -e "${YELLOW}  ldconfig${NC}"
+    echo -e "${RED}FATAL ERROR: libmecab.so.2 not found after installation!${NC}"
+    echo -e "${RED}Package installation failed. Check apt-get output above.${NC}"
     exit 1
 fi
+
+MECAB_DIR=$(dirname "$MECAB_LIB")
+echo -e "${GREEN}Found mecab library at: $MECAB_LIB${NC}"
+
+# ALWAYS create/overwrite the library config file (ensures it's properly set up)
+echo -e "${GREEN}Configuring library path in /etc/ld.so.conf.d/mecab.conf...${NC}"
+if [ "$EUID" -eq 0 ]; then
+    echo "$MECAB_DIR" > /etc/ld.so.conf.d/mecab.conf
+    ldconfig
+else
+    echo "$MECAB_DIR" | sudo tee /etc/ld.so.conf.d/mecab.conf > /dev/null
+    sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
+fi
+
+# Wait for cache to update
+sleep 2
+
+# Verify library is in cache
+if ldconfig -p 2>/dev/null | grep -q "libmecab.so.2"; then
+    echo -e "${GREEN}✅ libmecab.so.2 properly configured in library cache${NC}"
+else
+    echo -e "${YELLOW}WARNING: libmecab.so.2 not in ldconfig cache${NC}"
+    echo -e "${YELLOW}The start.sh script will handle this with LD_LIBRARY_PATH${NC}"
+fi
+
+# Export for current session
+export LD_LIBRARY_PATH="${MECAB_DIR}:${LD_LIBRARY_PATH}"
 
 # Install Rust (needed for tokenizers)
 echo -e "${GREEN}Installing Rust compiler...${NC}"
@@ -223,45 +200,48 @@ chmod 777 logs 2>/dev/null || true
 echo ""
 echo -e "${GREEN}[VERIFICATION] Testing installation...${NC}"
 
-# Re-export library path for verification
+# Set full library path for verification
 MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
 if [ -n "$MECAB_LIB" ]; then
     MECAB_DIR=$(dirname "$MECAB_LIB")
     export LD_LIBRARY_PATH="${MECAB_DIR}:/usr/lib/x86_64-linux-gnu:/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}"
 fi
 
-# Test mecab library (should already be in venv)
-echo -n "Checking libmecab.so.2... "
+# Test 1: mecab library
+echo -n "  [1/3] mecab library... "
 if LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "import ctypes; ctypes.CDLL('libmecab.so.2')" 2>/dev/null; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FAILED${NC}"
-    echo -e "${YELLOW}WARNING: mecab library test failed.${NC}"
-    echo -e "${YELLOW}Library path: ${LD_LIBRARY_PATH}${NC}"
-    echo -e "${YELLOW}The start.sh script will set this automatically.${NC}"
+    echo -e "${RED}ERROR: mecab library cannot be loaded!${NC}"
+    echo -e "${YELLOW}This will prevent the server from starting.${NC}"
+    echo -e "${YELLOW}Try running: ldconfig${NC}"
+    exit 1
 fi
 
-# Test PyTorch
-echo -n "Checking PyTorch installation... "
-if python3 -c "import torch; print('✓')" 2>/dev/null | grep -q "✓"; then
-    echo -e "${GREEN}OK${NC}"
-    # Show GPU availability
-    if python3 -c "import torch; exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
-        echo -e "${GREEN}  └─ CUDA GPU support: Available${NC}"
-    else
-        echo -e "${YELLOW}  └─ CUDA GPU support: Not available (CPU mode)${NC}"
-    fi
+# Test 2: PyTorch
+echo -n "  [2/3] PyTorch + CUDA... "
+if python3 -c "import torch; exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+    echo -e "${GREEN}OK (GPU available)${NC}"
+elif python3 -c "import torch" 2>/dev/null; then
+    echo -e "${YELLOW}OK (CPU only, no CUDA)${NC}"
 else
     echo -e "${RED}FAILED${NC}"
+    echo -e "${RED}ERROR: PyTorch not installed properly!${NC}"
+    exit 1
 fi
 
-# Test MeloTTS import
-echo -n "Checking MeloTTS installation... "
-if LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "from melo.api import TTS; print('✓')" 2>/dev/null | grep -q "✓"; then
+# Test 3: MeloTTS import
+echo -n "  [3/3] MeloTTS import... "
+if LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "from melo.api import TTS" 2>/dev/null; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FAILED${NC}"
-    echo -e "${YELLOW}This may be due to mecab library path. The start.sh script will handle this.${NC}"
+    echo -e "${RED}ERROR: MeloTTS cannot be imported!${NC}"
+    echo ""
+    echo "Full error:"
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "from melo.api import TTS"
+    exit 1
 fi
 
 echo ""

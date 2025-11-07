@@ -100,6 +100,8 @@ curl http://localhost:8080/health
 
 **No manual intervention required** - perfect for on-demand server spawning.
 
+**If setup fails:** See [FIX_MECAB_LIBRARY_ERROR.md](FIX_MECAB_LIBRARY_ERROR.md) for the most common issue, or [FRESH_INSTANCE_SETUP.md](FRESH_INSTANCE_SETUP.md) for what to expect during setup.
+
 See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
 
 ## 📡 API Endpoints
@@ -291,7 +293,16 @@ python3 -m unidic download
 
 ## 📚 Documentation
 
+### Setup & Deployment
+- [FRESH_INSTANCE_SETUP.md](FRESH_INSTANCE_SETUP.md) - ⭐ **What to expect on fresh instance** - timeline, what's normal, error signs
+- [QUICKSTART.md](QUICKSTART.md) - Quick start guide for different platforms
 - [DEPLOY.md](DEPLOY.md) - Detailed Git-based deployment guide for Vast.ai, RunPod, AWS, GCP, Azure
+
+### Troubleshooting
+- [FIX_MECAB_LIBRARY_ERROR.md](FIX_MECAB_LIBRARY_ERROR.md) - 🔧 **Fix "libmecab.so.2 not found" error** (most common issue)
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - General troubleshooting guide
+
+### Examples
 - [client_example.py](client_example.py) - Example Python client code
 
 ## 🔄 Updating the Server
