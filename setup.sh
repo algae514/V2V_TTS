@@ -51,9 +51,70 @@ apt-get install -y \
     exit 1
 }
 
-# Refresh library cache for mecab
-echo -e "${GREEN}Refreshing library cache...${NC}"
-ldconfig || true
+# CRITICAL FIX: Refresh library cache for mecab
+echo -e "${GREEN}Configuring mecab library...${NC}"
+
+# Run ldconfig with proper permissions
+if [ "$EUID" -eq 0 ]; then
+    ldconfig
+else
+    sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
+fi
+
+# Wait a moment for cache to update
+sleep 1
+
+# Find mecab library location
+MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
+
+if [ -z "$MECAB_LIB" ]; then
+    echo -e "${RED}ERROR: libmecab.so.2 not found after installation!${NC}"
+    echo -e "${YELLOW}Attempting to reinstall mecab packages...${NC}"
+    apt-get install --reinstall -y libmecab2 mecab libmecab-dev mecab-ipadic-utf8
+    
+    if [ "$EUID" -eq 0 ]; then
+        ldconfig
+    else
+        sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
+    fi
+    
+    sleep 1
+    MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
+fi
+
+if [ -n "$MECAB_LIB" ]; then
+    MECAB_DIR=$(dirname "$MECAB_LIB")
+    echo -e "${GREEN}Found mecab library at: $MECAB_LIB${NC}"
+    
+    # Ensure the directory is in the library path
+    if [ ! -f /etc/ld.so.conf.d/mecab.conf ]; then
+        echo -e "${YELLOW}Adding mecab library directory to ld.so.conf...${NC}"
+        if [ "$EUID" -eq 0 ]; then
+            echo "$MECAB_DIR" > /etc/ld.so.conf.d/mecab.conf
+            ldconfig
+        else
+            echo "$MECAB_DIR" | sudo tee /etc/ld.so.conf.d/mecab.conf > /dev/null
+            sudo ldconfig 2>/dev/null || ldconfig 2>/dev/null || true
+        fi
+        sleep 1
+    fi
+    
+    # Verify it's in the cache
+    if ldconfig -p 2>/dev/null | grep -q "libmecab.so.2"; then
+        echo -e "${GREEN}✅ libmecab.so.2 is properly configured in library cache${NC}"
+    else
+        echo -e "${YELLOW}WARNING: libmecab.so.2 found but not in cache. Will set LD_LIBRARY_PATH at runtime.${NC}"
+    fi
+    
+    # Export for current session
+    export LD_LIBRARY_PATH="${MECAB_DIR}:${LD_LIBRARY_PATH}"
+else
+    echo -e "${RED}FATAL ERROR: Could not find libmecab.so.2 after multiple attempts${NC}"
+    echo -e "${RED}Please install mecab manually:${NC}"
+    echo -e "${YELLOW}  apt-get install -y libmecab2 mecab libmecab-dev mecab-ipadic-utf8${NC}"
+    echo -e "${YELLOW}  ldconfig${NC}"
+    exit 1
+fi
 
 # Install Rust (needed for tokenizers)
 echo -e "${GREEN}Installing Rust compiler...${NC}"
@@ -158,14 +219,65 @@ echo -e "${GREEN}[6/6] Setting up directories...${NC}"
 mkdir -p logs
 chmod 777 logs 2>/dev/null || true
 
+# Post-installation verification
+echo ""
+echo -e "${GREEN}[VERIFICATION] Testing installation...${NC}"
+
+# Re-export library path for verification
+MECAB_LIB=$(find /usr/lib /usr/local/lib -name "libmecab.so.2*" 2>/dev/null | head -n 1)
+if [ -n "$MECAB_LIB" ]; then
+    MECAB_DIR=$(dirname "$MECAB_LIB")
+    export LD_LIBRARY_PATH="${MECAB_DIR}:/usr/lib/x86_64-linux-gnu:/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}"
+fi
+
+# Test mecab library (should already be in venv)
+echo -n "Checking libmecab.so.2... "
+if LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "import ctypes; ctypes.CDLL('libmecab.so.2')" 2>/dev/null; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    echo -e "${YELLOW}WARNING: mecab library test failed.${NC}"
+    echo -e "${YELLOW}Library path: ${LD_LIBRARY_PATH}${NC}"
+    echo -e "${YELLOW}The start.sh script will set this automatically.${NC}"
+fi
+
+# Test PyTorch
+echo -n "Checking PyTorch installation... "
+if python3 -c "import torch; print('✓')" 2>/dev/null | grep -q "✓"; then
+    echo -e "${GREEN}OK${NC}"
+    # Show GPU availability
+    if python3 -c "import torch; exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+        echo -e "${GREEN}  └─ CUDA GPU support: Available${NC}"
+    else
+        echo -e "${YELLOW}  └─ CUDA GPU support: Not available (CPU mode)${NC}"
+    fi
+else
+    echo -e "${RED}FAILED${NC}"
+fi
+
+# Test MeloTTS import
+echo -n "Checking MeloTTS installation... "
+if LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" python3 -c "from melo.api import TTS; print('✓')" 2>/dev/null | grep -q "✓"; then
+    echo -e "${GREEN}OK${NC}"
+else
+    echo -e "${RED}FAILED${NC}"
+    echo -e "${YELLOW}This may be due to mecab library path. The start.sh script will handle this.${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}✅ Setup complete!${NC}"
 echo ""
-echo "To start the server:"
-echo "  1. Activate virtual environment: source venv/bin/activate"
-echo "  2. Run: python3 app.py"
+echo "To start the server, simply run:"
+echo -e "  ${GREEN}./start.sh${NC}"
 echo ""
-echo "Or use the start script:"
-echo "  ./start.sh"
+echo "The start script will:"
+echo "  • Set up all required environment variables"
+echo "  • Verify all dependencies"
+echo "  • Start the server in the background"
+echo ""
+echo "You can also start manually:"
+echo "  source venv/bin/activate"
+echo "  export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/local/lib:/usr/lib:\${LD_LIBRARY_PATH}"
+echo "  python3 app.py"
 echo ""
 
