@@ -21,6 +21,7 @@ fi
 
 # Update system packages
 echo -e "${GREEN}[1/6] Updating system packages...${NC}"
+export DEBIAN_FRONTEND=noninteractive
 apt-get update || true
 
 # Install system dependencies
@@ -40,6 +41,7 @@ apt-get install -y \
     libsox-dev \
     libsox-fmt-all \
     mecab \
+    libmecab2 \
     libmecab-dev \
     mecab-ipadic-utf8 \
     pkg-config \
@@ -49,6 +51,10 @@ apt-get install -y \
     exit 1
 }
 
+# Refresh library cache for mecab
+echo -e "${GREEN}Refreshing library cache...${NC}"
+ldconfig || true
+
 # Install Rust (needed for tokenizers)
 echo -e "${GREEN}Installing Rust compiler...${NC}"
 if ! command -v rustc &> /dev/null; then
@@ -57,7 +63,13 @@ if ! command -v rustc &> /dev/null; then
     export PATH="$HOME/.cargo/bin:$PATH"
 else
     echo -e "${YELLOW}Rust already installed${NC}"
+    source "$HOME/.cargo/env" || true
+    export PATH="$HOME/.cargo/bin:$PATH"
 fi
+
+# Clear cargo registry cache to avoid edition2024 issues
+echo -e "${GREEN}Clearing cargo registry cache...${NC}"
+rm -rf "$HOME/.cargo/registry" 2>/dev/null || true
 
 # Create virtual environment
 echo -e "${GREEN}[3/6] Creating Python virtual environment...${NC}"
@@ -92,9 +104,47 @@ fi
 
 # Install Python dependencies from requirements.txt
 echo -e "${GREEN}Installing Python packages from requirements.txt...${NC}"
-pip install --no-cache-dir -r requirements.txt || {
+# First install base requirements
+pip install --no-cache-dir --only-binary=tokenizers -r requirements.txt || {
     echo -e "${RED}Failed to install Python dependencies${NC}"
     exit 1
+}
+
+# Install MeloTTS without dependencies to avoid transformers conflict
+echo -e "${GREEN}Installing MeloTTS...${NC}"
+pip install --no-cache-dir --no-deps git+https://github.com/myshell-ai/MeloTTS.git@main || {
+    echo -e "${RED}Failed to install MeloTTS${NC}"
+    exit 1
+}
+
+# Install MeloTTS dependencies (excluding transformers which is already installed)
+echo -e "${GREEN}Installing MeloTTS dependencies...${NC}"
+pip install --no-cache-dir --only-binary=tokenizers \
+    anyascii==0.3.2 \
+    cached_path \
+    cn2an==0.5.22 \
+    eng_to_ipa==0.0.2 \
+    fugashi==1.3.0 \
+    g2p_en==2.1.0 \
+    'g2pkk>=0.1.1' \
+    'gruut[de,es,fr]==2.2.3' \
+    inflect==7.0.0 \
+    jamo==0.4.1 \
+    jieba==0.42.1 \
+    langid==1.1.6 \
+    librosa==0.9.1 \
+    loguru==0.7.2 \
+    mecab-python3==1.0.9 \
+    num2words==0.5.12 \
+    pydub==0.25.1 \
+    pykakasi==2.2.1 \
+    pypinyin==0.50.0 \
+    tensorboard==2.16.2 \
+    txtsplit \
+    unidecode==1.3.7 \
+    unidic==1.1.0 \
+    unidic_lite==1.0.8 || {
+    echo -e "${YELLOW}Some MeloTTS dependencies failed to install, continuing...${NC}"
 }
 
 # Download UniDic dictionary

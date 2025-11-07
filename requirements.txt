@@ -31,22 +31,25 @@ requests==2.31.0               # HTTP library (used in client_example.py and for
 hf_transfer                    # High-speed transfer for HuggingFace models (faster model downloads)
 
 # ----------------------------------------------------------------------------
-# Text-to-Speech Engine
+# Text-to-Speech Engine  
 # ----------------------------------------------------------------------------
-# MeloTTS - install from git (main branch)
-# This will automatically install its dependencies including:
-# - transformers (for model loading)
-# - torch (if not already installed)
-# - other MeloTTS-specific dependencies
-git+https://github.com/myshell-ai/MeloTTS.git@main
+# Install a newer transformers version with pre-built tokenizers wheels for Python 3.12
+# MeloTTS requires transformers 4.27.4, but we use a newer compatible version
+transformers>=4.30.0
+
+# MeloTTS - installed separately in setup.sh with --no-deps to avoid conflicts
 
 # ============================================================================
 # System Dependencies (installed via setup.sh, not pip):
 # ============================================================================
 # - libsndfile1, libsndfile1-dev (for soundfile)
 # - sox, libsox-dev, libsox-fmt-all (for soxr)
-# - mecab, libmecab-dev, mecab-ipadic-utf8 (for Japanese text processing)
+# - mecab, libmecab2, libmecab-dev, mecab-ipadic-utf8 (for text processing)
+#   NOTE: libmecab2 is the RUNTIME library - REQUIRED for MeloTTS to work
 # - ffmpeg (for audio processing)
 # - Rust compiler (for tokenizers used by transformers)
 # - UniDic dictionary (downloaded separately via: python3 -m unidic download)
+# - NLTK data: averaged_perceptron_tagger_eng (auto-downloaded by app.py)
+# 
+# CRITICAL: After installing mecab packages, run 'ldconfig' to refresh library cache
 # ============================================================================

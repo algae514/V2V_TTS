@@ -2,6 +2,50 @@
 
 Deployment guide for the MeloTTS Text-to-Speech server using Git-based deployment.
 
+## ⚡ Automated On-Demand Deployment
+
+**Perfect for spawning servers on-demand (Vast.ai, RunPod, etc.):**
+
+This deployment is **100% automated and non-interactive** - ideal for scripts that spawn servers, run setup, and immediately start serving.
+
+```bash
+#!/bin/bash
+# Single-command automated deployment script
+cd /workspace && \
+git clone https://github.com/algae514/V2V_TTS.git && \
+cd V2V_TTS && \
+chmod +x setup.sh start.sh stop.sh && \
+./setup.sh && \
+./start.sh
+
+# Server will be ready at http://localhost:8080
+# No manual intervention required!
+```
+
+**What happens automatically:**
+1. ✅ System dependencies installed (mecab, libmecab2, ffmpeg, sox, etc.)
+2. ✅ Library cache refreshed (ldconfig)
+3. ✅ Rust compiler installed for tokenizers
+4. ✅ Python virtual environment created
+5. ✅ PyTorch installed with GPU auto-detection (CUDA or CPU)
+6. ✅ All Python dependencies installed
+7. ✅ UniDic dictionary downloaded
+8. ✅ NLTK data auto-downloaded on first start
+9. ✅ Server starts in background
+10. ✅ Ready to serve requests immediately
+
+**Environment Variables (optional):**
+```bash
+# Override defaults if needed
+export PORT=8080                    # Server port (default: 8080)
+export TTS_DEVICE=cuda              # Force CUDA or CPU (default: auto-detect)
+export TTS_LANGUAGE=EN              # Language code (default: EN)
+```
+
+**No classpath setup needed** - everything is self-contained in the virtual environment.
+
+---
+
 ## 🚀 Quick Deployment (Recommended)
 
 ### Vast.ai / RunPod / Generic Cloud
@@ -17,12 +61,16 @@ Deployment guide for the MeloTTS Text-to-Speech server using Git-based deploymen
    chmod +x setup.sh start.sh stop.sh
    ./setup.sh
    ```
-   This will:
-   - Install system dependencies (MeCab, ffmpeg, etc.)
+   This will (fully automated, non-interactive):
+   - Install system dependencies (mecab, libmecab2, ffmpeg, sox, etc.)
+   - Refresh library cache with ldconfig (critical for mecab)
+   - Install Rust compiler for tokenizers
    - Create Python virtual environment
-   - Install Python dependencies including PyTorch
+   - Auto-detect GPU and install PyTorch with CUDA or CPU
+   - Install all Python dependencies
    - Download UniDic dictionary
-   - Set up directories
+   - Set up log directories
+   - NLTK data auto-downloads on first server start
 
 3. **Start the server:**
    ```bash
@@ -65,8 +113,12 @@ sudo apt-get install -y \
     sox \
     libsox-dev \
     mecab \
+    libmecab2 \
     libmecab-dev \
     mecab-ipadic-utf8
+
+# CRITICAL: Refresh library cache after mecab installation
+sudo ldconfig
 ```
 
 ### 2. Clone Repository
@@ -255,7 +307,20 @@ curl http://localhost:8080/health
 ```bash
 # Try manual installation
 sudo apt-get update
-sudo apt-get install -y mecab libmecab-dev mecab-ipadic-utf8
+sudo apt-get install -y mecab libmecab2 libmecab-dev mecab-ipadic-utf8
+
+# CRITICAL: Refresh library cache
+sudo ldconfig
+```
+
+**libmecab.so.2 not found error:**
+```bash
+# Install the runtime library
+sudo apt-get install -y libmecab2
+sudo ldconfig
+
+# Restart server
+./stop.sh && ./start.sh
 ```
 
 **UniDic download fails:**

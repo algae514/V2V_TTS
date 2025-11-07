@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
+from contextlib import asynccontextmanager
 import os
 import uuid
 import logging
@@ -25,10 +26,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="TTS Server (MeloTTS)", version="2.0.0")
-
 # Global TTS instance
 melotts = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup
+    initialize_tts()
+    yield
+    # Shutdown (cleanup if needed)
+    logger.info("Shutting down TTS server...")
+
+
+app = FastAPI(title="TTS Server (MeloTTS)", version="2.0.0", lifespan=lifespan)
 
 class TTSRequest(BaseModel):
     text: str
@@ -155,6 +167,13 @@ def initialize_tts():
     """Initialize the MeloTTS model"""
     global melotts
     try:
+        # Download required NLTK data
+        try:
+            import nltk
+            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+        except Exception as e:
+            logger.warning(f"Failed to download NLTK data: {e}")
+        
         logger.info("Initializing MeloTTS model...")
         device = os.getenv("TTS_DEVICE", None)
         language = os.getenv("TTS_LANGUAGE", "EN")
@@ -171,12 +190,6 @@ def initialize_tts():
     except Exception as e:
         logger.error(f"Error initializing TTS: {e}")
         raise
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize TTS on startup"""
-    initialize_tts()
 
 
 @app.get("/")

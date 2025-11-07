@@ -45,9 +45,16 @@ A production-ready Text-to-Speech server using **MeloTTS** and FastAPI, optimize
    pip install -r requirements.txt
    ```
 
-4. **Install MeCab (macOS):**
+4. **Install MeCab:**
    ```bash
+   # macOS
    brew install mecab
+   
+   # Linux (Ubuntu/Debian)
+   sudo apt-get install mecab libmecab2 libmecab-dev mecab-ipadic-utf8
+   sudo ldconfig  # Refresh library cache
+   
+   # Download UniDic dictionary
    python3 -m unidic download
    ```
 
@@ -63,23 +70,35 @@ A production-ready Text-to-Speech server using **MeloTTS** and FastAPI, optimize
 
 ### Server Deployment (Recommended)
 
-**On Vast.ai, RunPod, or any cloud server:**
+**On Vast.ai, RunPod, or any cloud server (fully automated):**
 
 ```bash
 # Clone repository
 git clone https://github.com/algae514/V2V_TTS.git
 cd V2V_TTS
 
-# Run setup (installs everything automatically)
+# Run setup (installs everything automatically - non-interactive)
 chmod +x setup.sh start.sh stop.sh
 ./setup.sh
 
-# Start server
+# Start server (runs in background)
 ./start.sh
 
 # Test
 curl http://localhost:8080/health
 ```
+
+**What setup.sh does automatically:**
+- Installs system dependencies (mecab, libmecab2, ffmpeg, sox, etc.)
+- Refreshes library cache with ldconfig
+- Installs Rust compiler for tokenizers
+- Creates Python virtual environment
+- Installs PyTorch with GPU/CPU auto-detection
+- Installs all Python dependencies
+- Downloads UniDic and NLTK data (auto-downloaded on first run)
+- Sets up log directories
+
+**No manual intervention required** - perfect for on-demand server spawning.
 
 See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
 

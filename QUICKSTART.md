@@ -1,5 +1,21 @@
 # Quick Start Guide
 
+## ⚡ Automated On-Demand Deployment (One Command)
+
+Perfect for expensive servers you spawn on-demand:
+
+```bash
+# Single command - fully automated, non-interactive
+cd /workspace && \
+git clone https://github.com/algae514/V2V_TTS.git && \
+cd V2V_TTS && \
+chmod +x setup.sh start.sh stop.sh && \
+./setup.sh && \
+./start.sh
+```
+
+**Done!** Server is running on port 8080 and ready to serve requests.
+
 ## 🚀 Deploy on Vast.ai / RunPod in 3 Steps
 
 ```bash
@@ -7,15 +23,25 @@
 git clone https://github.com/algae514/V2V_TTS.git
 cd V2V_TTS
 
-# 2. Setup (one-time, installs everything)
+# 2. Setup (one-time, installs everything - fully automated)
 chmod +x setup.sh start.sh stop.sh
 ./setup.sh
 
-# 3. Start server
+# 3. Start server (runs in background)
 ./start.sh
 ```
 
-That's it! Server is running on port 8080.
+**What's installed automatically:**
+- System dependencies (mecab, libmecab2, ffmpeg, sox, etc.)
+- Library cache refresh (ldconfig)
+- Rust compiler for tokenizers
+- Python virtual environment
+- PyTorch with GPU auto-detection
+- All Python dependencies
+- UniDic dictionary
+- NLTK data (auto-downloaded on first start)
+
+**No manual intervention required!**
 
 ## 🧪 Test
 
