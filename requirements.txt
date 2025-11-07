@@ -1,16 +1,52 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-python-multipart==0.0.6
-soundfile==0.12.1
-numpy>=1.26.0
-requests==2.31.0
-hf_transfer
-soxr
+# ============================================================================
+# V2V_TTS - Text-to-Speech Server Requirements
+# ============================================================================
+# Note: PyTorch and torchaudio are installed separately in setup.sh
+# This allows GPU detection and proper CUDA/CPU installation based on hardware
+# ============================================================================
 
-# Note: torch and torchaudio are installed separately in setup.sh
-# This allows GPU detection and proper CUDA/CPU installation
+# ----------------------------------------------------------------------------
+# Web Framework & API
+# ----------------------------------------------------------------------------
+fastapi==0.104.1              # FastAPI web framework
+uvicorn[standard]==0.24.0      # ASGI server with standard extras (websockets, http/2)
+pydantic==2.5.0                # Data validation (required by FastAPI 0.104.1)
+python-multipart==0.0.6        # Required for form data parsing in FastAPI
+
+# ----------------------------------------------------------------------------
+# Audio Processing
+# ----------------------------------------------------------------------------
+soundfile==0.12.1              # Audio file I/O (used by MeloTTS for audio operations)
+numpy>=1.26.0                  # Numerical computing (required by PyTorch, soundfile, MeloTTS)
+soxr                           # SoX Resampler library (audio resampling, used by MeloTTS)
+
+# ----------------------------------------------------------------------------
+# HTTP & Network
+# ----------------------------------------------------------------------------
+requests==2.31.0               # HTTP library (used in client_example.py and for API calls)
+
+# ----------------------------------------------------------------------------
+# Model & Data Management
+# ----------------------------------------------------------------------------
+hf_transfer                    # High-speed transfer for HuggingFace models (faster model downloads)
+
+# ----------------------------------------------------------------------------
+# Text-to-Speech Engine
+# ----------------------------------------------------------------------------
 # MeloTTS - install from git (main branch)
-# Uses default English model from MeloTTS repository
+# This will automatically install its dependencies including:
+# - transformers (for model loading)
+# - torch (if not already installed)
+# - other MeloTTS-specific dependencies
 git+https://github.com/myshell-ai/MeloTTS.git@main
 
+# ============================================================================
+# System Dependencies (installed via setup.sh, not pip):
+# ============================================================================
+# - libsndfile1, libsndfile1-dev (for soundfile)
+# - sox, libsox-dev, libsox-fmt-all (for soxr)
+# - mecab, libmecab-dev, mecab-ipadic-utf8 (for Japanese text processing)
+# - ffmpeg (for audio processing)
+# - Rust compiler (for tokenizers used by transformers)
+# - UniDic dictionary (downloaded separately via: python3 -m unidic download)
+# ============================================================================

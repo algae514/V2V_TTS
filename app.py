@@ -4,15 +4,13 @@ FastAPI-based Text-to-Speech service using MeloTTS
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
 import logging
-import asyncio
 import numpy as np
-import soundfile as sf
 import torch
 import time
 

@@ -1,0 +1,146 @@
+# Cursor Rules for V2V_TTS Project
+
+## Project Overview
+This is a production-ready Text-to-Speech server using MeloTTS and FastAPI, optimized for GPU-accelerated deployment on cloud platforms (Vast.ai, RunPod, AWS, GCP, Azure).
+
+## Tech Stack
+- **Framework**: FastAPI 0.104.1
+- **TTS Engine**: MeloTTS (from git+https://github.com/myshell-ai/MeloTTS.git@main)
+- **Deep Learning**: PyTorch (with CUDA support)
+- **Server**: Uvicorn
+- **Language**: Python 3.10+
+
+## Code Style & Standards
+
+### Python Style
+- Follow PEP 8 conventions
+- Use type hints where appropriate (typing.Optional, typing.List, etc.)
+- Use f-strings for string formatting
+- Use descriptive variable names
+- Add docstrings to classes and functions
+
+### Logging
+- Always use the logger instance: `logger = logging.getLogger(__name__)`
+- Use appropriate log levels: INFO for normal operations, ERROR for failures, WARNING for fallbacks
+- Include context in log messages (e.g., `[TTS]` prefix for TTS-related logs)
+- Log GPU information when available (device name, memory)
+
+### Error Handling
+- Use try-except blocks for model initialization and synthesis
+- Implement graceful fallbacks (e.g., GPU → CPU fallback)
+- Raise HTTPException with appropriate status codes in API endpoints
+- Log errors with full context using `exc_info=True`
+
+## GPU Optimization Guidelines
+
+### Device Management
+- Always auto-detect GPU: `torch.cuda.is_available()`
+- Allow device override via `TTS_DEVICE` environment variable
+- Log GPU information when available (name, memory)
+- Implement CPU fallback if GPU initialization fails
+
+### Performance Optimizations
+- Use `torch.no_grad()` context for inference operations
+- Consider mixed precision (FP16) if supported by MeloTTS
+- Enable cuDNN benchmarking: `torch.backends.cudnn.benchmark = True` (if deterministic not required)
+- Clear GPU cache when appropriate: `torch.cuda.empty_cache()`
+
+### Memory Management
+- Clean up temporary files after serving
+- Monitor GPU memory usage in production
+- Consider batch processing for concurrent requests (if MeloTTS supports it)
+
+## API Design
+
+### Endpoints
+- Use FastAPI decorators: `@app.get()`, `@app.post()`
+- Return appropriate response types: `FileResponse` for audio, `JSONResponse` for data
+- Use Pydantic models for request validation: `BaseModel`
+- Include health check endpoints: `/health`, `/`
+
+### Request/Response
+- Validate input text (non-empty, reasonable length)
+- Return proper HTTP status codes (200, 400, 500, 503)
+- Use BackgroundTasks for cleanup operations
+- Generate unique filenames using UUID
+
+## File Structure
+- Main application: `app.py`
+- Setup script: `setup.sh` (handles PyTorch CUDA installation)
+- Start script: `start.sh` (manages server lifecycle)
+- Requirements: `requirements.txt` (excludes torch/torchaudio - installed separately)
+- Documentation: `README.md`, `QUICKSTART.md`, `DEPLOY.md`
+
+## Environment Variables
+- `PORT`: Server port (default: 8080)
+- `TTS_DEVICE`: Device to use - `cuda` or `cpu` (default: auto-detect)
+- `TTS_LANGUAGE`: Language code (default: `EN`)
+
+## Dependencies
+- PyTorch and torchaudio are installed separately in `setup.sh` with GPU detection
+- Other dependencies in `requirements.txt`
+- MeloTTS installed from git repository main branch
+
+## Deployment Considerations
+- Support for cloud platforms (Vast.ai, RunPod, AWS, GCP, Azure)
+- Automatic GPU detection and CUDA installation
+- Background process management via start.sh/stop.sh
+- Log file management in `logs/` directory
+- PID file management for process tracking
+
+## Testing & Validation
+- Always check if model is ready before processing: `melotts.is_ready()`
+- Validate input text before synthesis
+- Test health endpoints
+- Monitor logs for errors
+
+## Code Patterns
+
+### Model Initialization
+```python
+# Auto-detect device
+if device is None:
+    self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+# Initialize with device
+self.model = TTS(language=self.language, device=self.device)
+```
+
+### Error Handling Pattern
+```python
+try:
+    # Operation
+except Exception as e:
+    logger.error(f"Error message: {e}")
+    # Fallback or raise
+```
+
+### API Endpoint Pattern
+```python
+@app.post("/endpoint")
+async def handler(request: RequestModel):
+    if not melotts or not melotts.is_ready():
+        raise HTTPException(status_code=503, detail="Service not ready")
+    # Process request
+```
+
+## When Adding Features
+- Maintain backward compatibility with existing API
+- Add appropriate logging
+- Update documentation (README.md, DEPLOY.md, QUICKSTART.md)
+- Test GPU and CPU modes
+- Consider cloud deployment implications
+- Add health check status if needed
+
+## Security
+- Validate all user inputs
+- Sanitize file paths
+- Use temporary directories for file operations
+- Clean up temporary files after serving
+
+## Performance
+- Use async/await for I/O operations
+- Minimize blocking operations in request handlers
+- Consider connection pooling for external services
+- Monitor resource usage (CPU, GPU, memory)
+
